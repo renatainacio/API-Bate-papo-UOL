@@ -12,11 +12,21 @@ app.use(express.json());
 app.use(cors());
 dotenv.config();
 
-const schema = Joi.object({
+const schemaUser = Joi.object({
     username: Joi.string()
         .required()
         .min(1),
-})
+});
+
+const schemaMessage = Joi.object({
+    to: Joi.string()
+        .required()
+        .min(1),
+    text: Joi.string()
+        .required()
+        .min(1),
+    type: Joi.string().valid('message', 'private_message').required()
+});
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 try {
@@ -29,9 +39,9 @@ const db = mongoClient.db();
 
 app.post("/participants", async (req, res) => {
     const username = req.body.name;
-    const {error, value} = (schema.validate({username: username}));
+    const {error, value} = (schemaUser.validate({username: username}));
     if(error)
-        res.sendStatus(422);
+        return res.sendStatus(422);
     try{
         const resp = await db.collection('participants').findOne({name: username});
         if(resp)
@@ -43,15 +53,15 @@ app.post("/participants", async (req, res) => {
         });
         const message = await db.collection("messages").insertOne({
             from: username,
-            to: "Todos",
+            to: 'Todos',
             text: 'entra na sala...',
-            type: 'entra na sala...',
+            type: 'status',
             time: dayjs(time).format('HH:mm:ss')
         });
-        res.sendStatus(201);
+        return res.sendStatus(201);
     }catch(err){
         console.log(err.message);
-        res.sendStatus(500);
+        return res.sendStatus(500);
     }
 });
 
@@ -61,16 +71,45 @@ app.get("/participants", async (req, res) => {
         return res.send(participants);
     }catch(err){
         console.log(err);
-        res.sendStatus(500);
+        return res.sendStatus(500);
     }
 });
 
-app.post("/messages", (req, res) => {
-    
+app.post("/messages", async (req, res) => {
+    const details = req.body;
+    const user = req.headers.user;
+
+    const {error, value} = (schemaMessage.validate(details));
+    console.log(error);
+    if(error)
+        return res.sendStatus(422);
+
+    try{
+        const resp = await db.collection("participants").findOne({name: user});
+        if(!user || !resp)
+            return res.sendStatus(422);
+        const message = db.collection('messages').insertOne({
+            to: details.to,
+            text: details.text,
+            type: details.type,
+            from: user,
+            time: dayjs(Date.now()).format('HH:mm:ss')
+        });
+        return res.sendStatus(201);
+    }catch(err){
+        console.log(err);
+        return res.sendStatus(500);
+    }
 });
 
-app.get("/messages", (req, res) => {
-
+app.get("/messages", async (req, res) => {
+    try{
+        const messages = await db.collection('messages').find().toArray();
+        return res.send(messages);
+    }catch(err){
+        console.log(err);
+        return res.sendStatus(500);
+    }
 });
 
 app.post("/status", (req, res) => {
