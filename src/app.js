@@ -80,7 +80,6 @@ app.post("/messages", async (req, res) => {
     const user = req.headers.user;
 
     const {error, value} = (schemaMessage.validate(details));
-    console.log(error);
     if(error)
         return res.sendStatus(422);
 
@@ -103,8 +102,9 @@ app.post("/messages", async (req, res) => {
 });
 
 app.get("/messages", async (req, res) => {
+    const {user} = req.headers;
     try{
-        const messages = await db.collection('messages').find().toArray();
+        const messages = await db.collection('messages').find({$or: [{to: user}, {from: user}, {type: "message"}]}).toArray();
         return res.send(messages);
     }catch(err){
         console.log(err);
