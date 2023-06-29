@@ -118,8 +118,27 @@ app.get("/messages", async (req, res) => {
     }
 });
 
-app.post("/status", (req, res) => {
-    
+app.post("/status", async (req, res) => {
+    const {user} = req.headers;
+    if(!user)
+        return res.sendStatus(404);
+    try{
+        const resp = db.collection('participants').findOne({name: user});
+        if(!resp)
+            return res.sendStatus(404);
+        const update = db.collection('participants').updateOne(
+            {name: user},
+            {
+                name: user,
+                lastStatus: dayjs(Date.now()).format('HH:mm:ss')
+            },
+            {upsert: false}
+        );
+        res.sendStatus(200);
+    }catch(err){
+        console.log(err);
+        return res.sendStatus(500);
+    }
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
