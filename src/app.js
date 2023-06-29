@@ -105,7 +105,7 @@ app.get("/messages", async (req, res) => {
     const {user} = req.headers;
     const {limit} = req.query;
     try{
-        const messages = await db.collection('messages').find({$or: [{to: user}, {from: user}, {type: "message"}]}).toArray();
+        const messages = await db.collection('messages').find({$or: [{to: user}, {from: user}, {type: "message"}, {type: "status"}]}).toArray();
         if(limit) {
             if(isNaN(limit) || Number(limit) <= 0)
                 return res.sendStatus(422);
