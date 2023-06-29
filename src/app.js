@@ -87,7 +87,7 @@ app.post("/messages", async (req, res) => {
         const resp = await db.collection("participants").findOne({name: user});
         if(!user || !resp)
             return res.sendStatus(422);
-        const message = db.collection('messages').insertOne({
+        const message = await db.collection('messages').insertOne({
             to: details.to,
             text: details.text,
             type: details.type,
@@ -123,15 +123,15 @@ app.post("/status", async (req, res) => {
     if(!user)
         return res.sendStatus(404);
     try{
-        const resp = db.collection('participants').findOne({name: user});
+        const resp = await db.collection('participants').findOne({name: user});
         if(!resp)
             return res.sendStatus(404);
-        const update = db.collection('participants').updateOne(
+        const update = await db.collection('participants').updateOne(
             {name: user},
-            {
+            {$set: {
                 name: user,
-                lastStatus: dayjs(Date.now()).format('HH:mm:ss')
-            },
+                lastStatus: Date.now()
+            }},
             {upsert: false}
         );
         res.sendStatus(200);
@@ -140,5 +140,15 @@ app.post("/status", async (req, res) => {
         return res.sendStatus(500);
     }
 });
+
+async function removeInactiveUsers(){
+    try {
+        const now = Date.now();
+        const participants = await db.collection('participants').find().toArray();
+    } catch(err){
+        console.log(err);
+    }
+}
+
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
