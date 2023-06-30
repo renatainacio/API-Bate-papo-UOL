@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import Joi from "joi";
 import {MongoClient} from 'mongodb';
 import dayjs from 'dayjs';
-
+import { stripHtml } from "string-strip-html";
 
 const PORT = 5000;
 const app = express();
@@ -38,7 +38,7 @@ const db = mongoClient.db();
 
 
 app.post("/participants", async (req, res) => {
-    const username = req.body.name;
+    const username = stripHtml(req.body.name).result.trim();
     const {error, value} = (schemaUser.validate({username: username}, {abortEarly: false}));
     if(error)
         return res.sendStatus(422);
@@ -77,7 +77,7 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
     const details = req.body;
-    const user = req.headers.user;
+    const user = stripHtml(req.headers.user).result.trim();
 
     const {error, value} = (schemaMessage.validate(details, {abortEarly: false}));
     if(error)
@@ -88,9 +88,9 @@ app.post("/messages", async (req, res) => {
         if(!user || !resp)
             return res.sendStatus(422);
         const message = await db.collection('messages').insertOne({
-            to: details.to,
-            text: details.text,
-            type: details.type,
+            to: stripHtml(details.to).result.trim(),
+            text: stripHtml(details.text).result.trim(),
+            type: stripHtml(details.type).result.trim(),
             from: user,
             time: dayjs(Date.now()).format('HH:mm:ss')
         });
