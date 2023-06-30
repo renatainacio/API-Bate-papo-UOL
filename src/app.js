@@ -39,7 +39,7 @@ const db = mongoClient.db();
 
 app.post("/participants", async (req, res) => {
     const username = req.body.name;
-    const {error, value} = (schemaUser.validate({username: username}));
+    const {error, value} = (schemaUser.validate({username: username}, {abortEarly: false}));
     if(error)
         return res.sendStatus(422);
     try{
@@ -79,7 +79,7 @@ app.post("/messages", async (req, res) => {
     const details = req.body;
     const user = req.headers.user;
 
-    const {error, value} = (schemaMessage.validate(details));
+    const {error, value} = (schemaMessage.validate(details, {abortEarly: false}));
     if(error)
         return res.sendStatus(422);
 
@@ -141,12 +141,26 @@ app.post("/status", async (req, res) => {
     }
 });
 
+setInterval(() => removeInactiveUsers(), 15000);
+
 async function removeInactiveUsers(){
     try {
         const now = Date.now();
-        const participants = await db.collection('participants').find().toArray();
+        const participants = await db.collection('participants').find({lastStatus: {$lt: now-10000} }).toArray();
+        await db.collection('participants').deleteMany({lastStatus: {$lt: now-10000} });
+        const leaveMessages = participants.map(p =>
+            ({
+                from: p.name,
+                to: 'Todos',
+                text: 'sai da sala...',
+                type: 'status',
+                time: dayjs(Date.now()).format('HH:mm:ss')            
+            })
+        );
+        await db.collection('participants').insertMany(leaveMessages);
     } catch(err){
         console.log(err);
+        console.log("erro");
     }
 }
 
