@@ -38,7 +38,9 @@ const db = mongoClient.db();
 
 
 app.post("/participants", async (req, res) => {
-    const username = stripHtml(req.body.name).result.trim();
+    const username = req.body.name;
+    if(username)
+        username = stripHtml(username).result.trim();
     const {error, value} = (schemaUser.validate({username: username}, {abortEarly: false}));
     if(error)
         return res.sendStatus(422);
@@ -77,8 +79,9 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
     const details = req.body;
-    const user = stripHtml(req.headers.user).result.trim();
-
+    const user = req.headers.user;
+    if(user)
+        user = stripHtml(user).result.trim();
     const {error, value} = (schemaMessage.validate(details, {abortEarly: false}));
     if(error)
         return res.sendStatus(422);
@@ -102,7 +105,9 @@ app.post("/messages", async (req, res) => {
 });
 
 app.get("/messages", async (req, res) => {
-    const user = stripHtml(req.headers.user).result.trim();
+    const user = req.headers.user;
+    if(user)
+        user = stripHtml(user).result.trim();
     const {limit} = req.query;
     try{
         const messages = await db.collection('messages').find({$or: [{to: user}, {from: user}, {type: "message"}, {type: "status"}]}).toArray();
@@ -119,7 +124,9 @@ app.get("/messages", async (req, res) => {
 });
 
 app.post("/status", async (req, res) => {
-    const user = stripHtml(req.headers.user).result.trim();
+    const user = req.headers.user;
+    if(user)
+        user = stripHtml(user).result.trim();
     if(!user)
         return res.sendStatus(404);
     try{
@@ -141,15 +148,35 @@ app.post("/status", async (req, res) => {
     }
 });
 
-app.delete("/messages/:id", async(req, req) => {
+app.delete("/messages/:id", async(req, res) => {
     const {id} = req.params;
-    const user = stripHtml(req.headers.user).result.trim();
-    const msg = await db.collection('messages').findOne({_id: new ObjectId(id)});
-    if(!msg)
-        return res.send(404);
-    if(msg.from !== user)
-        return res.send(401);
-    await db.collection('messages').deleteOne(msg);
+    const user = req.headers.user;
+    if(user)
+        user = stripHtml(user).result.trim();
+    try {
+        const msg = await db.collection('messages').findOne({_id: new ObjectId(id)});
+        if(!msg)
+            return res.send(404);
+        if(msg.from !== user)
+            return res.send(401);
+        await db.collection('messages').deleteOne(msg);
+    } catch(err) {
+        console.log(err);
+        return res.sendStatus(500);
+    }
+});
+
+app.put("/messages/:id", async(req, res) => {
+    const {id} = req.params;
+    const user = req.headers.user;
+    if(user)
+        user = stripHtml(user).result.trim();
+    try {
+        const msg = await db.collection('messages').findOne({_id: new ObjectId(id)});
+    } catch(err){
+        console.log(err);
+        return res.sendStatus(500);
+    }
 });
 
 setInterval(() => removeInactiveUsers(), 15000);
