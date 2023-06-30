@@ -38,7 +38,7 @@ const db = mongoClient.db();
 
 
 app.post("/participants", async (req, res) => {
-    const username = req.body.name;
+    let username = req.body.name;
     if(username)
         username = stripHtml(username).result.trim();
     const {error, value} = (schemaUser.validate({username: username}, {abortEarly: false}));
@@ -79,7 +79,7 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
     const details = req.body;
-    const user = req.headers.user;
+    let user = req.headers.user;
     if(user)
         user = stripHtml(user).result.trim();
     const {error, value} = (schemaMessage.validate(details, {abortEarly: false}));
@@ -105,7 +105,7 @@ app.post("/messages", async (req, res) => {
 });
 
 app.get("/messages", async (req, res) => {
-    const user = req.headers.user;
+    let user = req.headers.user;
     if(user)
         user = stripHtml(user).result.trim();
     const {limit} = req.query;
