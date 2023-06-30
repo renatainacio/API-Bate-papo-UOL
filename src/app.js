@@ -39,11 +39,11 @@ const db = mongoClient.db();
 
 app.post("/participants", async (req, res) => {
     let username = req.body.name;
-    if(username)
-        username = stripHtml(username).result.trim();
     const {error, value} = (schemaUser.validate({username: username}, {abortEarly: false}));
     if(error)
         return res.sendStatus(422);
+    if(username)
+        username = stripHtml(username).result.trim();
     try{
         const resp = await db.collection('participants').findOne({name: username});
         if(resp)
@@ -150,6 +150,7 @@ app.post("/status", async (req, res) => {
 
 app.delete("/messages/:id", async(req, res) => {
     const {id} = req.params;
+    console.log(id);
     let user = req.headers.user;
     if(user)
         user = stripHtml(user).result.trim();
@@ -159,7 +160,7 @@ app.delete("/messages/:id", async(req, res) => {
             return res.send(404);
         if(msg.from !== user)
             return res.send(401);
-        await db.collection('messages').deleteOne(msg);
+        await db.collection('messages').deleteOne({_id: new ObjectId(id)});
     } catch(err) {
         console.log(err);
         return res.sendStatus(500);
@@ -168,6 +169,7 @@ app.delete("/messages/:id", async(req, res) => {
 
 app.put("/messages/:id", async(req, res) => {
     const {id} = req.params;
+    console.log(id);
     let user = req.headers.user;
     const details = req.body;
     const {error, value} = (schemaMessage.validate(details, {abortEarly: false}));
