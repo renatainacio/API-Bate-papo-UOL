@@ -124,7 +124,7 @@ app.get("/messages", async (req, res) => {
 });
 
 app.post("/status", async (req, res) => {
-    const user = req.headers.user;
+    let user = req.headers.user;
     if(user)
         user = stripHtml(user).result.trim();
     if(!user)
@@ -150,7 +150,7 @@ app.post("/status", async (req, res) => {
 
 app.delete("/messages/:id", async(req, res) => {
     const {id} = req.params;
-    const user = req.headers.user;
+    let user = req.headers.user;
     if(user)
         user = stripHtml(user).result.trim();
     try {
@@ -168,16 +168,40 @@ app.delete("/messages/:id", async(req, res) => {
 
 app.put("/messages/:id", async(req, res) => {
     const {id} = req.params;
-    const user = req.headers.user;
+    let user = req.headers.user;
+    const details = req.body;
+    const {error, value} = (schemaMessage.validate(details, {abortEarly: false}));
+    if(error)
+        return res.sendStatus(422);
     if(user)
         user = stripHtml(user).result.trim();
     try {
+        const resp = await db.collection("participants").findOne({name: user});
+        if(!user || !resp)
+            return res.sendStatus(422);
         const msg = await db.collection('messages').findOne({_id: new ObjectId(id)});
+        if(!msg)
+            return res.send(404);
+        if(msg.from !== user)
+            return res.send(401);
+        const updatedMessage = {
+            to: stripHtml(details.to).result.trim(),
+            text: stripHtml(details.text).result.trim(),
+            type: stripHtml(details.type).result.trim(),
+            from: user,
+        };
+        const result = await db.collection("messages").updateOne(
+            {_id: new ObjectId(id)},
+            {$set: updatedMessage}
+        )
     } catch(err){
         console.log(err);
         return res.sendStatus(500);
     }
 });
+
+
+
 
 setInterval(() => removeInactiveUsers(), 15000);
 
