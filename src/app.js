@@ -147,17 +147,19 @@ async function removeInactiveUsers(){
     try {
         const now = Date.now();
         const participants = await db.collection('participants').find({lastStatus: {$lt: now-10000} }).toArray();
-        await db.collection('participants').deleteMany({lastStatus: {$lt: now-10000} });
-        const leaveMessages = participants.map(p =>
-            ({
-                from: p.name,
-                to: 'Todos',
-                text: 'sai da sala...',
-                type: 'status',
-                time: dayjs(Date.now()).format('HH:mm:ss')            
-            })
-        );
-        await db.collection('participants').insertMany(leaveMessages);
+        if (participants.length != 0){            
+            await db.collection('participants').deleteMany({lastStatus: {$lt: now-10000} });
+            const leaveMessages = participants.map(p =>
+                ({
+                    from: p.name,
+                    to: 'Todos',
+                    text: 'sai da sala...',
+                    type: 'status',
+                    time: dayjs(Date.now()).format('HH:mm:ss')            
+                })
+            );
+            await db.collection('messages').insertMany(leaveMessages);
+        }
     } catch(err){
         console.log(err);
         console.log("erro");
