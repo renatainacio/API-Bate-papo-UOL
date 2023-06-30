@@ -157,10 +157,13 @@ app.delete("/messages/:id", async(req, res) => {
     try {
         const msg = await db.collection('messages').findOne({_id: new ObjectId(id)});
         if(!msg)
-            return res.send(404);
+            return res.sendStatus(404);
         if(msg.from !== user)
             return res.send(401);
-        await db.collection('messages').deleteOne({_id: new ObjectId(id)});
+        console.log(msg);
+        const result = await db.collection('messages').deleteOne({_id: new ObjectId(id)});
+        if (result.deletedCount === 0) return res.sendStatus(404);
+		return res.sendStatus(200)
     } catch(err) {
         console.log(err);
         return res.sendStatus(500);
@@ -196,6 +199,7 @@ app.put("/messages/:id", async(req, res) => {
             {_id: new ObjectId(id)},
             {$set: updatedMessage}
         )
+        return res.sendStatus(200);
     } catch(err){
         console.log(err);
         return res.sendStatus(500);
@@ -205,29 +209,29 @@ app.put("/messages/:id", async(req, res) => {
 
 
 
-setInterval(() => removeInactiveUsers(), 15000);
+// setInterval(() => removeInactiveUsers(), 15000);
 
-async function removeInactiveUsers(){
-    try {
-        const now = Date.now();
-        const participants = await db.collection('participants').find({lastStatus: {$lt: now-10000} }).toArray();
-        if (participants.length != 0){            
-            await db.collection('participants').deleteMany({lastStatus: {$lt: now-10000} });
-            const leaveMessages = participants.map(p =>
-                ({
-                    from: p.name,
-                    to: 'Todos',
-                    text: 'sai da sala...',
-                    type: 'status',
-                    time: dayjs(Date.now()).format('HH:mm:ss')            
-                })
-            );
-            await db.collection('messages').insertMany(leaveMessages);
-        }
-    } catch(err){
-        console.log(err);
-    }
-}
+// async function removeInactiveUsers(){
+//     try {
+//         const now = Date.now();
+//         const participants = await db.collection('participants').find({lastStatus: {$lt: now-10000} }).toArray();
+//         if (participants.length != 0){            
+//             await db.collection('participants').deleteMany({lastStatus: {$lt: now-10000} });
+//             const leaveMessages = participants.map(p =>
+//                 ({
+//                     from: p.name,
+//                     to: 'Todos',
+//                     text: 'sai da sala...',
+//                     type: 'status',
+//                     time: dayjs(Date.now()).format('HH:mm:ss')            
+//                 })
+//             );
+//             await db.collection('messages').insertMany(leaveMessages);
+//         }
+//     } catch(err){
+//         console.log(err);
+//     }
+// }
 
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
