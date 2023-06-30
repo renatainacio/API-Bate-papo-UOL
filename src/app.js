@@ -206,32 +206,29 @@ app.put("/messages/:id", async(req, res) => {
     }
 });
 
+setInterval(() => removeInactiveUsers(), 15000);
 
-
-
-// setInterval(() => removeInactiveUsers(), 15000);
-
-// async function removeInactiveUsers(){
-//     try {
-//         const now = Date.now();
-//         const participants = await db.collection('participants').find({lastStatus: {$lt: now-10000} }).toArray();
-//         if (participants.length != 0){            
-//             await db.collection('participants').deleteMany({lastStatus: {$lt: now-10000} });
-//             const leaveMessages = participants.map(p =>
-//                 ({
-//                     from: p.name,
-//                     to: 'Todos',
-//                     text: 'sai da sala...',
-//                     type: 'status',
-//                     time: dayjs(Date.now()).format('HH:mm:ss')            
-//                 })
-//             );
-//             await db.collection('messages').insertMany(leaveMessages);
-//         }
-//     } catch(err){
-//         console.log(err);
-//     }
-// }
+async function removeInactiveUsers(){
+    try {
+        const now = Date.now();
+        const participants = await db.collection('participants').find({lastStatus: {$lt: now-10000} }).toArray();
+        if (participants.length != 0){            
+            await db.collection('participants').deleteMany({lastStatus: {$lt: now-10000} });
+            const leaveMessages = participants.map(p =>
+                ({
+                    from: p.name,
+                    to: 'Todos',
+                    text: 'sai da sala...',
+                    type: 'status',
+                    time: dayjs(Date.now()).format('HH:mm:ss')            
+                })
+            );
+            await db.collection('messages').insertMany(leaveMessages);
+        }
+    } catch(err){
+        console.log(err);
+    }
+}
 
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
